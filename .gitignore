@@ -1,0 +1,39 @@
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+.env
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE and editor configuration files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Operating System generated files
+.DS_Store
+Thumbs.db
+
+# Streamlit specific
+.streamlit/
+
+# Log files and temporary files
+*.log
+*.tmp```
+
+data/
+
+

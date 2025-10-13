@@ -35,5 +35,8 @@ Thumbs.db
 *.tmp```
 
 data/
+checkpoints/
+checkpoints_vit_tiny
+
 
 

@@ -53,12 +53,6 @@ The learning curves below show the validation accuracy progression for both mode
 
 ![Learning Curves](images/learning_curves.png)
 
-### Final Performance
-
-The bar chart provides a direct comparison of the final test accuracy after 10 epochs. Vision-BDH outperforms the ViT-Tiny baseline by a significant margin.
-
-![Final Accuracy Comparison](images/final_accuracy_comparison.png)
-
 ### Key Findings
 
 ✅ **Vision-BDH achieves +6.55 percentage points higher accuracy** than ViT-Tiny  

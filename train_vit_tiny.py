@@ -8,13 +8,14 @@ import time
 import os
 import math
 
-from vit_tiny import create_vit_tiny_patch4_32
+# Assuming the vit.py file (which contains the create_vit_tiny... function) is in the 'models' directory
+from models.vit import create_vit_tiny_patch4_32
 
 
 def get_cosine_schedule_with_warmup(optimizer, num_warmup_steps, num_training_steps, last_epoch=-1):
     """
-    Harmonogram learning rate: warmup + cosine decay
-    (identyczny jak w main.py dla BDH)
+    Learning rate schedule: warmup + cosine decay.
+    (Identical to the one used for VisionBDH for a fair comparison).
     """
     def lr_lambda(current_step):
         if current_step < num_warmup_steps:
@@ -27,10 +28,10 @@ def get_cosine_schedule_with_warmup(optimizer, num_warmup_steps, num_training_st
 
 def main():
     """
-    Trening ViT-Tiny z IDENTYCZNYMI ustawieniami jak BDH-Vision
-    dla uczciwego porównania.
+    Trains a ViT-Tiny model with settings IDENTICAL to the VisionBDH experiment
+    to establish a fair performance baseline.
     """
-    # --- IDENTYCZNA KONFIGURACJA JAK W main.py ---
+    # --- IDENTICAL CONFIGURATION AS main.py for VisionBDH ---
     EPOCHS = 10
     BATCH_SIZE = 32
     INITIAL_LR = 1e-4
@@ -56,7 +57,7 @@ def main():
     num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"ViT-Tiny created with {num_params / 1e6:.2f}M trainable parameters.")
 
-    # --- IDENTYCZNE PRZYGOTOWANIE DANYCH ---
+    # --- IDENTICAL DATA PREPARATION ---
     train_transform = transforms.Compose([
         transforms.RandomResizedCrop(32, scale=(0.8, 1.0)),
         transforms.RandomHorizontalFlip(),

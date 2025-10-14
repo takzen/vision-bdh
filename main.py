@@ -15,11 +15,19 @@ import math
 from models.bdh import BDHConfig
 from models.vision_bdh import VisionBDH
 
-# --- NOWA FUNKCJA: Harmonogram Learning Rate z Warmup i Cosine Decay ---
+
 def get_cosine_schedule_with_warmup(optimizer, num_warmup_steps, num_training_steps, last_epoch=-1):
     """
-    Tworzy harmonogram learning rate, który liniowo rośnie przez `num_warmup_steps`,
-    a następnie maleje zgodnie z funkcją kosinus.
+    Creates a learning rate schedule with linear warmup followed by cosine decay.
+    
+    Args:
+        optimizer: PyTorch optimizer
+        num_warmup_steps: Number of steps for linear warmup
+        num_training_steps: Total number of training steps
+        last_epoch: The index of last epoch
+    
+    Returns:
+        torch.optim.lr_scheduler.LambdaLR: Learning rate scheduler
     """
     def lr_lambda(current_step):
         if current_step < num_warmup_steps:
@@ -32,10 +40,13 @@ def get_cosine_schedule_with_warmup(optimizer, num_warmup_steps, num_training_st
 
 def main(args):
     """
-    Główna funkcja, która konfiguruje, trenuje i ocenia model VisionBDH 
-    na zbiorze danych CIFAR-10, z prawidłowym podziałem na zbiór walidacyjny.
+    Main function that configures, trains, and evaluates the VisionBDH model
+    on the CIFAR-10 dataset with proper train/validation split.
+    
+    Args:
+        args: Command-line arguments (e.g., --resume flag)
     """
-    # --- 1. Konfiguracja ---
+    # --- 1. Configuration ---
     EPOCHS = 10
     BATCH_SIZE = 32
     INITIAL_LR = 1e-4 
@@ -45,18 +56,17 @@ def main(args):
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     CHECKPOINT_DIR = "./checkpoints"
 
-
     os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 
     print("--- Starting VisionBDH training on CIFAR-10 ---")
     print(f"Configuration: {EPOCHS} epochs, Batch Size: {BATCH_SIZE}, LR: {INITIAL_LR}, Device: {DEVICE}")
 
-    # --- 2. Konfiguracja Modelu ---
+    # --- 2. Model Configuration ---
     config = BDHConfig(n_layer=6, n_embd=192, n_head=6, vocab_size=256)
     model = VisionBDH(bdh_config=config, img_size=32, patch_size=4, num_classes=10).to(DEVICE)
     optimizer = AdamW(model.parameters(), lr=INITIAL_LR, weight_decay=0.05)
     
-    # --- 3. Logika Wznawiania Treningu ---
+    # --- 3. Resume Training Logic ---
     start_epoch = 0
     if args.resume:
         list_of_files = glob.glob(os.path.join(CHECKPOINT_DIR, '*.pth'))
@@ -74,7 +84,7 @@ def main(args):
     num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Model created with {num_params / 1e6:.2f}M trainable parameters.")
 
-    # --- 4. Przygotowanie Danych z Podziałem na Walidację ---
+    # --- 4. Data Preparation with Validation Split ---
     train_transform = transforms.Compose([
         transforms.RandomResizedCrop(32, scale=(0.8, 1.0)),
         transforms.RandomHorizontalFlip(),
@@ -101,13 +111,13 @@ def main(args):
     
     print(f"CIFAR-10 dataset loaded. Train: {len(train_dataset)}, Validation: {len(val_dataset)}, Test: {len(test_dataset)}")
 
-    # Konfiguracja harmonogramu learning rate
+    # --- 5. Learning Rate Scheduler Configuration ---
     num_training_steps = EPOCHS * len(train_loader)
     scheduler = get_cosine_schedule_with_warmup(optimizer, num_warmup_steps=WARMUP_STEPS, num_training_steps=num_training_steps)
 
     loss_fn = nn.CrossEntropyLoss()
 
-    # --- 5. Główna Pętla Treningowa ---
+    # --- 6. Main Training Loop ---
     print("\n--- Starting Training ---")
     for epoch in range(start_epoch, EPOCHS):
         epoch_start_time = time.time()
@@ -122,7 +132,7 @@ def main(args):
             loss = loss_fn(logits, labels)
             loss.backward()
             
-            # Przycinanie gradientów
+            # Gradient clipping
             torch.nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP)
             
             optimizer.step()
@@ -136,7 +146,7 @@ def main(args):
 
         avg_train_loss = total_loss / len(train_loader)
 
-        # --- 6. Pętla Ewaluacyjna (na zbiorze walidacyjnym) ---
+        # --- 7. Validation Evaluation ---
         model.eval()
         correct = 0
         total = 0
@@ -159,7 +169,7 @@ def main(args):
         print(f"  Epoch Time: {epoch_time:.2f}s")
         print("-" * 50)
         
-        # --- 7. Zapisywanie Checkpointu po każdej epoce ---
+        # --- 8. Save Checkpoint After Each Epoch ---
         checkpoint_path = os.path.join(CHECKPOINT_DIR, f'checkpoint_epoch_{epoch}.pth')
         torch.save({
             'epoch': epoch,
@@ -171,7 +181,7 @@ def main(args):
         
     print("\n--- Training Finished ---")
 
-    # --- 8. Finalna, Jednorazowa Ewaluacja na Zbiorze Testowym ---
+    # --- 9. Final Evaluation on Test Set ---
     print("\n--- Starting Final Evaluation on Test Set ---")
     model.eval()
     correct = 0
@@ -189,7 +199,7 @@ def main(args):
     print(f"Final Test Accuracy: {test_accuracy:.2f}%")
     print("-" * 50)
     
-    # --- 9. Zapisywanie Finalnego Modelu ---
+    # --- 10. Save Final Model ---
     final_model_path = os.path.join(CHECKPOINT_DIR, 'final_model.pth')
     torch.save(model.state_dict(), final_model_path)
     print(f"✓ Final model saved to {final_model_path}")

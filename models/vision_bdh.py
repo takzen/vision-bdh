@@ -7,12 +7,12 @@ from models.bdh import BDHConfig
 
 class VisionBDH(nn.Module):
     """
-    Adapter konwertujący BDH (zaprojektowany dla języka) na Vision Transformer.
+    An adapter to convert the language-oriented BDH model into a Vision Transformer.
     
-    Kluczowe modyfikacje:
-    1. Patch embedding zamiast token embedding
-    2. Bidirectional attention zamiast causal
-    3. Classification head zamiast language modeling head
+    Key modifications:
+    1. Patch embedding instead of token embedding.
+    2. Bidirectional attention instead of causal attention.
+    3. Classification head instead of a language modeling head.
     """
     
     def __init__(self, bdh_config, img_size=32, patch_size=4, num_classes=10, in_channels=3):
@@ -21,7 +21,7 @@ class VisionBDH(nn.Module):
         self.patch_size = patch_size
         self.num_patches = (img_size // patch_size) ** 2
         
-        # Patch embedding: Conv2d działa jak linearny projection każdego patcha
+        # Patch embedding: A Conv2d layer acts as a linear projection for each patch.
         self.patch_embed = nn.Conv2d(
             in_channels, 
             bdh_config.n_embd, 
@@ -29,22 +29,22 @@ class VisionBDH(nn.Module):
             stride=patch_size
         )
         
-        # Positional embedding dla patches (dodatkowe, obok RoPE w BDH)
+        # Positional embedding for patches (an additional embedding, alongside BDH's RoPE).
         self.pos_embed = nn.Parameter(
             torch.randn(1, self.num_patches, bdh_config.n_embd) * 0.02
         )
         
-        # Budujemy BDH layers ręcznie (bez embedding i lm_head)
+        # Build the BDH layers manually (without the original embedding and lm_head).
         self.build_bdh_layers()
         
-        # Classification head
+        # Classification head.
         self.ln_final = nn.LayerNorm(bdh_config.n_embd, elementwise_affine=False, bias=False)
         self.head = nn.Linear(bdh_config.n_embd, num_classes)
         
         self.apply(self._init_weights)
     
     def build_bdh_layers(self):
-        """Buduje warstwy BDH z modyfikacją dla bidirectional attention"""
+        """Builds the core BDH parameters with a modification for bidirectional attention."""
         C = self.config
         nh = C.n_head
         D = C.n_embd
@@ -54,7 +54,7 @@ class VisionBDH(nn.Module):
         self.encoder = nn.Parameter(torch.zeros((nh, D, N)).normal_(std=0.02))
         self.encoder_v = nn.Parameter(torch.zeros((nh, D, N)).normal_(std=0.02))
         
-        # Attention z modyfikacją dla vision
+        # Attention module with modifications for vision tasks.
         self.attn = BidirectionalAttention(C)
         
         self.ln = nn.LayerNorm(D, elementwise_affine=False, bias=False)
@@ -69,9 +69,9 @@ class VisionBDH(nn.Module):
     def forward(self, x):
         """
         Args:
-            x: (B, C, H, W) - batch obrazów
+            x: (B, C, H, W) - a batch of images.
         Returns:
-            logits: (B, num_classes)
+            logits: (B, num_classes).
         """
         B = x.shape[0]
         C = self.config
@@ -80,17 +80,17 @@ class VisionBDH(nn.Module):
         N = D * C.mlp_internal_dim_multiplier // nh
         
         # 1. Patch embedding: (B, C, H, W) -> (B, D, H/P, W/P) -> (B, D, num_patches) -> (B, num_patches, D)
-        x = self.patch_embed(x)  # (B, D, H/P, W/P)
-        x = x.flatten(2).transpose(1, 2)  # (B, num_patches, D)
+        x = self.patch_embed(x)
+        x = x.flatten(2).transpose(1, 2)
         
-        # 2. Add positional embedding
+        # 2. Add positional embedding.
         x = x + self.pos_embed
         
-        # 3. Reshape dla BDH: (B, num_patches, D) -> (B, 1, num_patches, D)
+        # 3. Reshape for BDH core: (B, num_patches, D) -> (B, 1, num_patches, D)
         x = x.unsqueeze(1)
         x = self.ln(x)
         
-        # 4. BDH layers (n_layer razy)
+        # 4. BDH layers loop (n_layer times).
         for level in range(C.n_layer):
             x_latent = x @ self.encoder
             x_sparse = F.relu(x_latent)  # (B, nh, T, N)
@@ -114,19 +114,19 @@ class VisionBDH(nn.Module):
             y = self.ln(yMLP)
             x = self.ln(x + y)
         
-        # 5. Global average pooling + classification
-        x = x.squeeze(1)  # (B, num_patches, D)
-        x = x.mean(dim=1)  # (B, D) - średnia po wszystkich patches
+        # 5. Global average pooling + classification.
+        x = x.squeeze(1)      # (B, num_patches, D)
+        x = x.mean(dim=1)     # (B, D) - average across all patches
         x = self.ln_final(x)
-        logits = self.head(x)  # (B, num_classes)
+        logits = self.head(x) # (B, num_classes)
         
         return logits
 
 
 class BidirectionalAttention(nn.Module):
     """
-    Modyfikacja Attention z BDH: usuwa causal masking (.tril)
-    aby umożliwić pełną bidirectional attention dla patches obrazu.
+    A modification of the BDH Attention module: removes causal masking (.tril)
+    to enable full bidirectional attention for image patches.
     """
     
     def __init__(self, config):
@@ -136,7 +136,7 @@ class BidirectionalAttention(nn.Module):
         D = config.n_embd
         N = config.mlp_internal_dim_multiplier * D // nh
         
-        # Kopiujemy z BDH.Attention
+        # Copied from the original BDH.Attention
         from models.bdh import get_freqs
         self.freqs = nn.Parameter(
             get_freqs(N, theta=2**16, dtype=torch.float32).view(1, 1, 1, N),
@@ -169,10 +169,10 @@ class BidirectionalAttention(nn.Module):
         QR = self.rope(r_phases, Q)
         KR = QR
         
-        # KLUCZOWA ZMIANA: Pełna attention zamiast .tril(diagonal=-1)
-        scores = QR @ KR.mT  # (B, nh, T, T) - wszystkie patches widzą wszystkie
+        # KEY CHANGE: Full attention matrix instead of .tril(diagonal=-1)
+        scores = QR @ KR.mT  # (B, nh, T, T) - all patches can see all other patches
         
-        # Opcjonalnie: softmax dla stabilności (w oryginalnym BDH tego nie ma)
+        # Optional: add softmax for stability (not present in original BDH)
         # scores = F.softmax(scores / (Q.size(-1) ** 0.5), dim=-1)
         
         return scores @ V

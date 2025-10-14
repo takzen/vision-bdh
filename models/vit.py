@@ -6,20 +6,20 @@ from torchvision.models import vision_transformer
 
 def create_vit_tiny_patch4_32(num_classes=10):
     """
-    Tworzy instancję Vision Transformer w konfiguracji "Tiny",
-    dostosowaną do obrazów 32x32 z łatkami 4x4.
+    Creates an instance of a Vision Transformer in a "Tiny" configuration,
+    specifically adapted for 32x32 images with 4x4 patches.
     
-    Ta konfiguracja jest wzorowana na popularnych implementacjach, np. z biblioteki `timm`.
+    This configuration is modeled after popular implementations, e.g., from the `timm` library.
     """
-    # Używamy elastycznej klasy VisionTransformer z torchvision
+    # We use the flexible VisionTransformer class from torchvision
     model = vision_transformer.VisionTransformer(
         image_size=32,
         patch_size=4,
         num_layers=12,
         num_heads=3,
-        hidden_dim=192,  # To jest nasz 'n_embd'
-        mlp_dim=192 * 4, # Standardowo wymiar MLP to 4 * wymiar embeddingu
+        hidden_dim=192,  # This corresponds to our 'n_embd'
+        mlp_dim=192 * 4, # The MLP dimension is typically 4x the embedding dimension
         num_classes=num_classes,
-        representation_size=None, # Nie używamy dodatkowej głowicy projekcyjnej
+        representation_size=None, # We don't use an extra projection head
     )
     return model

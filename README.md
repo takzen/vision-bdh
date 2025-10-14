@@ -47,6 +47,18 @@ We conducted a controlled experiment comparing `Vision-BDH` against a standard *
 | **Vision-BDH** | 6.5M | **72.51%** 🏆 | 0.86 | 6 layers (recurrent), 192 dim, 6 heads |
 | **ViT-Tiny** | 5.7M | 65.96% | 0.85 | 12 layers, 192 dim, 3 heads |
 
+### Learning Curves
+
+The learning curves below show the validation accuracy progression for both models over 10 epochs. Vision-BDH demonstrates consistently higher sample efficiency, achieving better results at every stage of the training process.
+
+![Learning Curves](images/learning_curves.png)
+
+### Final Performance
+
+The bar chart provides a direct comparison of the final test accuracy after 10 epochs. Vision-BDH outperforms the ViT-Tiny baseline by a significant margin.
+
+![Final Accuracy Comparison](images/final_accuracy_comparison.png)
+
 ### Key Findings
 
 ✅ **Vision-BDH achieves +6.55 percentage points higher accuracy** than ViT-Tiny  

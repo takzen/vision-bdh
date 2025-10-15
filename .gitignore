@@ -37,6 +37,7 @@ Thumbs.db
 data/
 checkpoints/
 checkpoints_vit_tiny/
+checkpoints_mlp32/
 README_PL.md
 
 

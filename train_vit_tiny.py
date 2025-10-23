@@ -32,7 +32,7 @@ def main():
     to establish a fair performance baseline.
     """
     # --- IDENTICAL CONFIGURATION AS main.py for VisionBDH ---
-    EPOCHS = 10
+    EPOCHS = 30
     BATCH_SIZE = 32
     INITIAL_LR = 1e-4
     WARMUP_STEPS = 500

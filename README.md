@@ -249,13 +249,16 @@ This will create four visualization plots in the `images/` directory:
 
 ```
 vision-bdh/
+├── analysis/
+│   ├── analyze.py          # Generate comparison visualizations
+|   └── analyze_v2.py       # for v2
 ├── models/
 │   ├── bdh.py              # Original BDH implementation
 │   ├── vision_bdh.py       # Vision-adapted BDH with bidirectional attention
+│   ├── vision_bdh_v2.py    # v2
 |   └── vit.py              # ViT-Tiny model definition
 ├── main.py                 # Train Vision-BDH (optimized, MLP 32×)
 ├── train_vit_tiny.py       # Train ViT-Tiny baseline 
-├── analyze.py              # Generate comparison visualizations
 ├── checkpoints/            # Vision-BDH checkpoints
 ├── checkpoints_mlp32/      # Vision-BDH checkpoints MLP 32x
 ├── checkpoints_vit_tiny/   # ViT-Tiny checkpoints

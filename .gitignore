@@ -35,9 +35,11 @@ Thumbs.db
 *.tmp```
 
 data/
+dev/
 checkpoints/
 checkpoints_vit_tiny/
 checkpoints_mlp32/
+checkpoints_mlp32_30epochs/
 README_PL.md
 
 

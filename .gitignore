@@ -35,13 +35,23 @@ Thumbs.db
 *.tmp```
 
 data/
+data_cifar10/
+data_cifar100/
 dev/
-checkpoints/
-checkpoints_v2/
-checkpoints_vit_tiny/
-checkpoints_mlp32/
-checkpoints_mlp32_30epochs/
-README_PL.md
+images/
+
+checkpoints_v2_cifar100/
+checkpoints_resnet20_cifar100/
+checkpoints_deit_tiny_cifar100/
+checkpoints_efficientnet_cifar100/
+checkpoints_mobilenetv2_cifar100/
+checkpoints_vit_tiny_cifar100/
+
+checkpoints_v1_cifar10/
+checkpoints_v2_cifar10/
+checkpoints_vit_tiny_cifar10
+
+
 
 
 

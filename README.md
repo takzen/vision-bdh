@@ -83,6 +83,28 @@ We conducted controlled experiments on CIFAR-10 and CIFAR-100, training all mode
 
 ---
 
+### Visual Results
+
+#### CIFAR-10 Learning Curves
+
+![CIFAR-10 Learning Curves](analysis_results/cifar-10_learning_curves.png)
+
+*Vision-BDH demonstrates consistently superior learning dynamics throughout training, achieving higher validation accuracy at every epoch compared to the ViT-Tiny baseline.*
+
+#### CIFAR-100 Learning Curves
+
+![CIFAR-100 Learning Curves](analysis_results/cifar-100_learning_curves.png)
+
+*On the more challenging CIFAR-100 dataset, Vision-BDH's advantage becomes even more pronounced, showing stronger sample efficiency and better generalization across 100 fine-grained classes.*
+
+**Key Observations from Learning Curves:**
+- 📈 **Faster convergence:** Vision-BDH reaches high accuracy earlier in training
+- 📊 **Better sample efficiency:** Achieves superior results with the same number of training steps
+- 🎯 **Stable training:** Smooth learning curves with minimal overfitting
+- 💪 **Scalability:** Performance gap widens on more complex tasks (CIFAR-100)
+
+---
+
 ## Visual Analysis: How the Models "See"
 
 To gain a deeper understanding of *why* `Vision-BDH` outperforms the baseline, we visualized the internal attention mechanism of both models. We analyzed the attention patterns from the center image patch to all other patches across different layers.
@@ -118,28 +140,6 @@ The results reveal fundamental differences in their processing strategies.
 *   🧠 **Two Different "Minds":** The models employ fundamentally different strategies. `Vision-BDH` is **decisive and object-centric**, quickly identifying and focusing on the subject. `ViT-Tiny` is more **exploratory and contextual**, spending more layers gathering broad information before making a final, sometimes indirect, association.
 
 *   🚀 **Efficiency Explains Performance:** The highly efficient and interpretable attention strategy of `Vision-BDH` is a likely explanation for its superior performance. By avoiding a lengthy exploration phase and focusing on relevant object features early, it appears to learn more effectively within a limited training budget.
-
----
-
-### Visual Results
-
-#### CIFAR-10 Learning Curves
-
-![CIFAR-10 Learning Curves](analysis_results/cifar-10_learning_curves.png)
-
-*Vision-BDH demonstrates consistently superior learning dynamics throughout training, achieving higher validation accuracy at every epoch compared to the ViT-Tiny baseline.*
-
-#### CIFAR-100 Learning Curves
-
-![CIFAR-100 Learning Curves](analysis_results/cifar-100_learning_curves.png)
-
-*On the more challenging CIFAR-100 dataset, Vision-BDH's advantage becomes even more pronounced, showing stronger sample efficiency and better generalization across 100 fine-grained classes.*
-
-**Key Observations from Learning Curves:**
-- 📈 **Faster convergence:** Vision-BDH reaches high accuracy earlier in training
-- 📊 **Better sample efficiency:** Achieves superior results with the same number of training steps
-- 🎯 **Stable training:** Smooth learning curves with minimal overfitting
-- 💪 **Scalability:** Performance gap widens on more complex tasks (CIFAR-100)
 
 ---
 

@@ -81,6 +81,46 @@ We conducted controlled experiments on CIFAR-10 and CIFAR-100, training all mode
 
 **Vision-BDH demonstrates superior accuracy and parameter efficiency compared to standard CNN and Transformer baselines when trained from scratch. The architectural advantages become more pronounced as task complexity increases.**
 
+---
+
+## Visual Analysis: How the Models "See"
+
+To gain a deeper understanding of *why* `Vision-BDH` outperforms the baseline, we visualized the internal attention mechanism of both models. We analyzed the attention patterns from the center image patch to all other patches across different layers.
+
+The results reveal fundamental differences in their processing strategies.
+
+### Case Study 1: "Ship" Image
+
+**Vision-BDH v2:**
+![Vision-BDH Attention on a Ship](attention_maps/attention_vision-bdh_v2_ship.png)
+
+*   **Analysis:** The `Vision-BDH` model demonstrates a highly logical and interpretable thought process. In the first layer, it immediately identifies a key anchor point (the bow of the ship). By the middle layer, it expands its focus to the entire horizontal structure of the hull, a pattern that is refined in the final layer. This shows an efficient strategy of identifying and focusing on the object's core structure early on.
+
+**ViT-Tiny (Baseline):**
+![ViT-Tiny Attention on a Ship](attention_maps/attention_vit-tiny_ship.png)
+
+*   **Analysis:** In contrast, `ViT-Tiny` exhibits a more exploratory and less focused strategy. Its attention remains diffuse through the middle layers, suggesting a phase of broad context gathering. In the final layer, the attention almost completely dissipates, which may indicate that the necessary information has already been aggregated by the `[CLS]` token, making inter-patch attention less critical at the end.
+
+### Case Study 2: "Bird" Image
+
+**Vision-BDH v2:**
+![Vision-BDH Attention on a Bird](attention_maps/attention_vision-bdh_v2_bird.png)
+
+*   **Analysis:** The pattern is remarkably consistent. `Vision-BDH` again starts by locking onto a high-contrast anchor point (the bird's head/beak). It then progressively expands its attention to encompass the bird's main body, demonstrating a robust object-centric focus.
+
+**ViT-Tiny (Baseline):**
+![ViT-Tiny Attention on a Bird](attention_maps/attention_vit-tiny_bird.png)
+
+*   **Analysis:** `ViT-Tiny` again shows a diffuse, exploratory pattern in its middle layers. Interestingly, its final attention focuses sharply on the background (foliage in the top-right corner) rather than the bird itself. This suggests it may be learning contextual associations (e.g., "foliage is often near birds") rather than focusing directly on the object's features—a potentially less robust strategy.
+
+### Key Insights from Visualizations
+
+*   🧠 **Two Different "Minds":** The models employ fundamentally different strategies. `Vision-BDH` is **decisive and object-centric**, quickly identifying and focusing on the subject. `ViT-Tiny` is more **exploratory and contextual**, spending more layers gathering broad information before making a final, sometimes indirect, association.
+
+*   🚀 **Efficiency Explains Performance:** The highly efficient and interpretable attention strategy of `Vision-BDH` is a likely explanation for its superior performance. By avoiding a lengthy exploration phase and focusing on relevant object features early, it appears to learn more effectively within a limited training budget.
+
+---
+
 ### Visual Results
 
 #### CIFAR-10 Learning Curves
@@ -379,7 +419,7 @@ vision-bdh/
 
 **2. Architecture Analysis**
 - [ ] Ablation studies (gating, Q=K, sparsity)
-- [ ] Visualize attention patterns
+- [x] Visualize attention patterns
 - [ ] Analyze activation sparsity statistics
 - [ ] Compare feature representations (CKA, SVCCA)
 

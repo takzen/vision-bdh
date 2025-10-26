@@ -81,6 +81,26 @@ We conducted controlled experiments on CIFAR-10 and CIFAR-100, training all mode
 
 **Vision-BDH demonstrates superior accuracy and parameter efficiency compared to standard CNN and Transformer baselines when trained from scratch. The architectural advantages become more pronounced as task complexity increases.**
 
+### Visual Results
+
+#### CIFAR-10 Learning Curves
+
+![CIFAR-10 Learning Curves](analysis_results/cifar-10_learning_curves.png)
+
+*Vision-BDH demonstrates consistently superior learning dynamics throughout training, achieving higher validation accuracy at every epoch compared to the ViT-Tiny baseline.*
+
+#### CIFAR-100 Learning Curves
+
+![CIFAR-100 Learning Curves](analysis_results/cifar-100_learning_curves.png)
+
+*On the more challenging CIFAR-100 dataset, Vision-BDH's advantage becomes even more pronounced, showing stronger sample efficiency and better generalization across 100 fine-grained classes.*
+
+**Key Observations from Learning Curves:**
+- 📈 **Faster convergence:** Vision-BDH reaches high accuracy earlier in training
+- 📊 **Better sample efficiency:** Achieves superior results with the same number of training steps
+- 🎯 **Stable training:** Smooth learning curves with minimal overfitting
+- 💪 **Scalability:** Performance gap widens on more complex tasks (CIFAR-100)
+
 ---
 
 ## Architecture Evolution

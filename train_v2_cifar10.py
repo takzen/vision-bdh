@@ -49,8 +49,8 @@ def main(args):
     GRAD_CLIP = 1.0
     VALIDATION_SPLIT = 0.2
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-    CHECKPOINT_DIR = "./checkpoints_v2_cifar10"
-    LOG_FILE = os.path.join(CHECKPOINT_DIR, "metrics_v2_cifar10.csv")
+    CHECKPOINT_DIR = "./checkpoints_v2_nosoftmax_cifar10"
+    LOG_FILE = os.path.join(CHECKPOINT_DIR, "metrics_v2_nosoftmax_cifar10.csv")
     MLP_MULTIPLIER = 32
 
     os.makedirs(CHECKPOINT_DIR, exist_ok=True)
@@ -248,7 +248,7 @@ def main(args):
     test_accuracy = 100 * correct / total
     print(f"Final Test Accuracy: {test_accuracy:.2f}%")
 
-    final_model_path = os.path.join(CHECKPOINT_DIR, "final_model_best_v2.pth")
+    final_model_path = os.path.join(CHECKPOINT_DIR, "final_model_best_v2_nosoftmax.pth")
     torch.save(model.state_dict(), final_model_path)
     print(f"✓ Final model saved to {final_model_path}")
 

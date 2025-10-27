@@ -49,7 +49,7 @@ class VisionBDHv2(nn.Module):
     - [v2 change] More transparent dropout control
     """
 
-    def __init__(self, bdh_config, img_size=32, patch_size=4, num_classes=10, in_channels=3, use_softmax_attn=True):
+    def __init__(self, bdh_config, img_size=32, patch_size=4, num_classes=10, in_channels=3, use_softmax_attn=False):
         super().__init__()
         self.config = bdh_config
         self.patch_size = patch_size

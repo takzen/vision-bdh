@@ -1,6 +1,19 @@
 # interpretability/models_for_viz/vision_bdh_v2.py
-# This is a modified version of the VisionBDHv2 model, adapted
-# to return attention maps for visualization purposes.
+"""
+MODIFIED VERSION FOR VISUALIZATION ONLY!
+
+This is a modified copy of models/vision_bdh_v2.py that returns 
+attention maps for interpretability analysis.
+
+DO NOT use this for training - use the original in models/ instead.
+
+Changes from original:
+- Added return_attention parameter to forward()
+- Modified attention module to return weights
+- Stores attention maps for visualization
+
+Original: models/vision_bdh_v2.py
+"""
 
 import torch
 import torch.nn as nn

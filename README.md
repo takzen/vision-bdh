@@ -335,9 +335,14 @@ vision-bdh/
 │   ├── bdh.py                      # Original BDH implementation
 │   ├── vision_bdh.py               # Vision-BDH v1
 │   ├── vision_bdh_v2.py            # Vision-BDH v2 (recommended)
+│   ├── vision_bdh_ablation.py      # Vision-BDH v2 (for ablation)
 │   └── vit.py                      # ViT-Tiny baseline
+│ 
 ├── analysis/
+│   ├── compare_ablations.py        # For ablation
 │   └── analyze.py                  # Visualization tools
+│ 
+├── attention_maps/                 # Generated maps
 ├── analysis_results/               # Generated plots
 ├── checkpoints_v1_cifar10/         # Vision-BDH v1 checkpoints
 ├── checkpoints_v2_cifar10/         # Vision-BDH v2 CIFAR-10 checkpoints
@@ -350,6 +355,7 @@ vision-bdh/
 ├── checkpoints_efficientnet_cifar100/  # EfficientNet-B0 checkpoints
 ├── data_cifar10/                   # CIFAR-10 (auto-downloaded)
 ├── data_cifar100/                  # CIFAR-100 (auto-downloaded)
+├── train_ablation_cifar100.py
 ├── train_bdh_v1_cifar10.py
 ├── train_bdh_v2_cifar10.py
 ├── train_bdh_v2_cifar100.py
@@ -418,7 +424,7 @@ vision-bdh/
 - **Hypothesis:** Sparse activations + gating → efficient segmentation
 
 **2. Architecture Analysis**
-- [ ] Ablation studies (gating, Q=K, sparsity)
+- [x] Ablation studies (gating, Q=K, sparsity)
 - [x] Visualize attention patterns
 - [ ] Analyze activation sparsity statistics
 - [ ] Compare feature representations (CKA, SVCCA)
@@ -531,6 +537,11 @@ MIT License - See `LICENSE` file for details.
 ---
 
 ## Changelog
+
+### v3.1 (Current) - Interpretability and Architectural Refactoring
+- ✅ **Attention Visualization:** Implemented tools (`interpretability/visualize_attention.py`) to generate and analyze attention maps, providing qualitative insights into the model's inner workings.
+- ✅ **Architectural Refactoring:** Refactored the `VisionBDH-v2` model to be highly configurable, enabling easy ablation studies of key components like normalization styles.
+- ✅ **Documentation:** Added a new "Visual Analysis" section with attention map comparisons and updated the README with the latest findings.
 
 ### v3.0 (Current) - Extended Benchmarks & CIFAR-100
 - ✅ **50-epoch training:** Comprehensive validation on CIFAR-10

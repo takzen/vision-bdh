@@ -1,5 +1,14 @@
-# interpretability/models_for_viz/vit.py
-# Final, fully compatible version for visualizing ViT attention.
+# interpretability/models_for_viz/vision_bdh_v2.py
+"""
+MODIFIED VERSION FOR VISUALIZATION ONLY!
+
+This is a modified copy of models/vit.py that returns 
+attention maps for interpretability analysis.
+
+DO NOT use this for training - use the original in models/ instead.
+
+Original: models/vit.py
+"""
 
 import torch
 from torch import nn

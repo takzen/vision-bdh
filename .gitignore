@@ -52,13 +52,10 @@ checkpoints_v2_cifar10/
 checkpoints_vit_tiny_cifar10/
 
 checkpoints_v2_nosoftmax_cifar10/
+checkpoints_v3_cifar10/
 
 checkpoints_ablation_nogating_cifar100/
 
-# temp
-
-vision_bdh_v3.py
-train_bdh_v3_cifar10.py
 
 
 

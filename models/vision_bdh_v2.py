@@ -43,7 +43,7 @@ class VisionBDHv2(nn.Module):
     Vision-BDH v2 — incremental, stable, and slightly optimized version of VisionBDH.
     
     Core architecture identical to v1, but with:
-    - [v2 change] Optional softmax attention for better numerical stability
+    - [v2 change] Optional softmax attention for better numerical stability - default: FALSE
     - [v2 change] Improved initialization (Xavier uniform)
     - [v2 change] Slightly adjusted LayerNorm placement
     - [v2 change] More transparent dropout control

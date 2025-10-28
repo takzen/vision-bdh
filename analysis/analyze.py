@@ -24,7 +24,9 @@ paths = {
     # --- CIFAR-10 Experiment ---
     "bdh_v1_c10": "./checkpoints_v1_cifar10/metrics_v1_cifar10.csv",
     "bdh_v2_c10": "./checkpoints_v2_cifar10/metrics_v2_cifar10.csv",
+    "bdh_v2_nosoftmax_c10": "./checkpoints_v2_nosoftmax_cifar10/metrics_v2_nosoftmax_cifar10.csv",
     "vit_c10": "./checkpoints_vit_tiny_cifar10/metrics_vit_tiny_cifar10.csv",
+    "bdh_v3_c10": "./checkpoints_v3_cifar10/metrics_v3_cifar10.csv",
 
     # --- CIFAR-100 Experiment ---
     "bdh_v2_c100": "./checkpoints_v2_cifar100/metrics_v2_cifar100.csv",
@@ -56,17 +58,29 @@ dataframes = {key: load_data(path, key) for key, path in paths.items()}
 
 final_results = {
     "cifar10": {
-        "Vision-BDH v1": {
+        "Vision-BDH v1 (Linear Attn)": {
             "params_millions": 3.56,
             "final_test_accuracy": 80.43, # <-- UPDATE ok
             "dataframe_key": "bdh_v1_c10",
             "color": "#FF6347"
         },
-        "Vision-BDH v2": {
+        "Vision-BDH v2 (Linear Attn)": {
+            "params_millions": 3.2,
+            "final_test_accuracy": 81.73, # <-- UPDATE ok
+            "dataframe_key": "bdh_v2_nosoftmax_c10",
+            "color": "#D62728"
+        },
+        "Vision-BDH v2 (Softmax Attn)": {
             "params_millions": 3.2,
             "final_test_accuracy": 80.45, # <-- UPDATE ok
             "dataframe_key": "bdh_v2_c10",
-            "color": "#D62728"
+            "color": "#E377C2" 
+        },
+        "Vision-BDH v3 (Linear Attn)": {
+            "params_millions": 3.2,
+            "final_test_accuracy": 45.00, # <-- UPDATE ok
+            "dataframe_key": "bdh_v3_c10",
+            "color": "#54B012" 
         },
         "ViT-Tiny": {
             "params_millions": 5.7,

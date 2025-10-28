@@ -1,16 +1,14 @@
-# train_cifar100.py
+# train_v3_cifar10.py
 """
-Train Vision-BDH v2 for 30 epochs with torch.compile() enabled.
-This version introduces minor architectural and training refinements for Vision-BDH v2:
-- Improved numerical stability (no softmax, emergent linear attention preserved)
-- Better GPU precision and scheduling
-- Structured logging for experiment tracking
+Train Vision-BDH v3 (community-enhanced version) for 50 epochs.
+This script aims to replicate the SOTA results achieved by incorporating
+ScaledLayerNorm and Linear Attention.
 """
 
 import torch
 from torch import nn
 from torch.optim import AdamW
-from torchvision.datasets import CIFAR100 
+from torchvision.datasets import CIFAR10
 from torchvision import transforms
 from torch.utils.data import DataLoader, random_split
 import time
@@ -21,7 +19,7 @@ import math
 import csv
 
 from models.bdh import BDHConfig
-from models.vision_bdh_v2 import VisionBDHv2
+from models.vision_bdh_v3 import VisionBDHv3
 
 
 def get_cosine_schedule_with_warmup(optimizer, num_warmup_steps, num_training_steps, last_epoch=-1):
@@ -39,18 +37,19 @@ def get_cosine_schedule_with_warmup(optimizer, num_warmup_steps, num_training_st
 
 def main(args):
     """
-    Train Vision-BDH v2 on CIFAR-100 with improved stability and precision.
+    Train Vision-BDH v3 on CIFAR-10.
     """
     # --- Configuration ---
     EPOCHS = 50
     BATCH_SIZE = 32
     INITIAL_LR = 1e-4
-    WARMUP_STEPS = 1000
+    WARMUP_STEPS = 1000 # Let's keep this consistent with your v2 script
     GRAD_CLIP = 1.0
     VALIDATION_SPLIT = 0.2
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-    CHECKPOINT_DIR = "./checkpoints_v2_nosoftmax_cifar100"
-    LOG_FILE = os.path.join(CHECKPOINT_DIR, "metrics_v2_nosoftmax_cifar100.csv")
+    # --- CHANGE: New directory for v3 results ---
+    CHECKPOINT_DIR = "./checkpoints_v3_cifar10"
+    LOG_FILE = os.path.join(CHECKPOINT_DIR, "metrics_v3_cifar10.csv")
     MLP_MULTIPLIER = 32
 
     os.makedirs(CHECKPOINT_DIR, exist_ok=True)
@@ -61,7 +60,7 @@ def main(args):
     torch.set_float32_matmul_precision("high")
 
     print("=" * 70)
-    print("     Training Vision-BDH v2 (MLP Multiplier = 32, 30 Epochs)")
+    print(f"     Training Vision-BDH v3 (MLP Multiplier = {MLP_MULTIPLIER}, {EPOCHS} Epochs)")
     print("=" * 70)
     print(f"Device: {DEVICE}")
     print("=" * 70)
@@ -71,13 +70,14 @@ def main(args):
         n_layer=6,
         n_embd=192,
         n_head=6,
-        vocab_size=256,
+        vocab_size=256, # This is not used in the vision model but required by BDHConfig
         mlp_internal_dim_multiplier=MLP_MULTIPLIER
     )
-    model = VisionBDHv2(bdh_config=config, img_size=32, patch_size=4, num_classes=100)
+    # The model uses use_softmax_attn=False by default, which is correct
+    model = VisionBDHv3(bdh_config=config, img_size=32, patch_size=4, num_classes=10)
 
     # --- Model Compilation ---
-    print("\nCompiling Vision-BDH v2...")
+    print("\nCompiling Vision-BDH v3...")
     try:
         backend_choice = "aot_eager"
         model = torch.compile(model, backend=backend_choice)
@@ -114,17 +114,16 @@ def main(args):
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
-
     val_test_transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
 
-    full_train_dataset = CIFAR100(root="./data_cifar100", train=True, download=True, transform=train_transform)
+    full_train_dataset = CIFAR10(root="./data_cifar10", train=True, download=True, transform=train_transform)
     train_size = int((1 - VALIDATION_SPLIT) * len(full_train_dataset))
     val_size = len(full_train_dataset) - train_size
     train_dataset, val_dataset = random_split(full_train_dataset, [train_size, val_size])
-    test_dataset = CIFAR100(root="./data_cifar100", train=False, download=True, transform=val_test_transform)
+    test_dataset = CIFAR10(root="./data_cifar10", train=False, download=True, transform=val_test_transform)
 
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=2, pin_memory=True)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=2)
@@ -139,15 +138,13 @@ def main(args):
         num_warmup_steps=WARMUP_STEPS,
         num_training_steps=num_training_steps
     )
-
     loss_fn = nn.CrossEntropyLoss()
 
     # --- Training ---
     print("\n" + "=" * 70)
-    print("     Starting Training Loop (v2)")
+    print("     Starting Training Loop (v3)")
     print("=" * 70 + "\n")
 
-    # Initialize metrics log
     if start_epoch == 0:
         with open(LOG_FILE, "w", newline="") as f:
             writer = csv.writer(f)
@@ -160,22 +157,14 @@ def main(args):
 
         for i, (images, labels) in enumerate(train_loader):
             images, labels = images.to(DEVICE), labels.to(DEVICE)
-
             optimizer.zero_grad()
             logits = model(images)
             loss = loss_fn(logits, labels)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP)
-
             optimizer.step()
             scheduler.step()
-
             total_loss += loss.item()
-
-            if (i + 1) % 100 == 0:
-                current_lr = scheduler.get_last_lr()[0]
-                print(f"  Epoch {epoch+1}/{EPOCHS}, Batch {i+1}/{len(train_loader)}, "
-                      f"Loss: {loss.item():.4f}, LR: {current_lr:.6f}")
 
         avg_train_loss = total_loss / len(train_loader)
 
@@ -201,7 +190,6 @@ def main(args):
         print(f"  Epoch Time: {epoch_time:.2f}s")
         print("-" * 70)
 
-        # Save metrics
         with open(LOG_FILE, "a", newline="") as f:
             writer = csv.writer(f)
             writer.writerow([epoch + 1, avg_train_loss, val_accuracy, epoch_time, scheduler.get_last_lr()[0]])
@@ -248,13 +236,14 @@ def main(args):
     test_accuracy = 100 * correct / total
     print(f"Final Test Accuracy: {test_accuracy:.2f}%")
 
-    final_model_path = os.path.join(CHECKPOINT_DIR, "final_model_best_cifar100.pth")
+    # --- CHANGE: New final model name ---
+    final_model_path = os.path.join(CHECKPOINT_DIR, "final_model_best_v3.pth")
     torch.save(model.state_dict(), final_model_path)
     print(f"✓ Final model saved to {final_model_path}")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Train VisionBDH v2 on CIFAR-100")
+    parser = argparse.ArgumentParser(description="Train Vision-BDH v3 on CIFAR-10")
     parser.add_argument("--resume", action="store_true", help="Resume training from the latest checkpoint")
     args = parser.parse_args()
     main(args)

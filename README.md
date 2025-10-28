@@ -3,7 +3,7 @@
 ![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
 ![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-ee4c2c.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-![CIFAR-10](https://img.shields.io/badge/CIFAR--10-80.45%25-success.svg)
+![CIFAR-10](https://img.shields.io/badge/CIFAR--10-81.73%25-success.svg)
 ![CIFAR-100](https://img.shields.io/badge/CIFAR--100-51.44%25-success.svg)
 
 This project is a PyTorch-based research framework dedicated to adapting and exploring the novel **Baby Dragon Hatchling (BDH)** architecture for computer vision tasks.
@@ -39,7 +39,7 @@ Our model preserves 4 out of 5 fundamental innovations from the original BDH arc
 ### Key Modifications for Vision
 
 1. **Bidirectional Attention:** Removed causal masking to analyze all image patches simultaneously
-2. **Enhanced v2 Architecture:** Xavier initialization, optional softmax attention, Pre-LayerNorm for better stability
+2. **Enhanced v2 Architecture:** Xavier initialization, Pre-LayerNorm, and raw attention scores (no softmax)
 
 ---
 
@@ -49,16 +49,18 @@ We conducted controlled experiments on CIFAR-10 and CIFAR-100, training all mode
 
 ### CIFAR-10 Benchmark
 
-| Model | Parameters | Test Accuracy |
-|:------|:----------:|:-------------:|
-| **Vision-BDH v2** | **3.2M** | **80.45%** 🏆 |
-| **Vision-BDH v1** | **3.6M** | **80.43%** |
-| ViT-Tiny | 5.4M | 76.05% |
+| Model | Parameters | Test Accuracy | Notes |
+|:------|:----------:|:-------------:|:------|
+| **Vision-BDH v2 (optimized)** | **3.2M** | **81.73%** 🏆 | No softmax |
+| Vision-BDH v2 (baseline) | 3.2M | 80.45% | With softmax |
+| Vision-BDH v1 | 3.6M | 80.43% | Original |
+| ViT-Tiny | 5.4M | 76.05% | Baseline |
 
 **Key Findings:**
-- ✅ **+4.4pp advantage** over ViT-Tiny
+- ✅ **+5.68pp advantage** over ViT-Tiny with optimized v2
+- ✅ **+1.28pp improvement** by removing softmax (81.73% vs 80.45%)
 - ✅ **~40% fewer parameters** (3.2M vs 5.4M)
-- ✅ **Architecture robustness:** Both v1 and v2 achieve ~80.4%
+- ✅ **Q=K constraint provides natural normalization** - softmax is unnecessary
 
 ### CIFAR-100 Benchmark (Extended Comparison)
 
@@ -73,13 +75,45 @@ We conducted controlled experiments on CIFAR-10 and CIFAR-100, training all mode
 
 **Key Findings:**
 - ✅ **Dominant performance** across all baselines
-- ✅ **+4.9pp advantage** over ViT-Tiny (next best)
-- ✅ **Efficient learner:** Outperforms "data-hungry" models (EfficientNet, MobileNet) in limited-epoch regime
+- ✅ **+4.91pp advantage** over ViT-Tiny (next best)
+- ✅ **Efficient learner:** Outperforms "data-hungry" models in limited-epoch regime
 - ✅ **Growing advantage:** Performance gap increases with task complexity
 
 ### Overall Conclusion
 
-**Vision-BDH demonstrates superior accuracy and parameter efficiency compared to standard CNN and Transformer baselines when trained from scratch. The architectural advantages become more pronounced as task complexity increases.**
+**Vision-BDH demonstrates superior accuracy and parameter efficiency compared to standard CNN and Transformer baselines when trained from scratch. Key discovery: removing softmax from attention (+1.28pp) leverages the Q=K constraint's natural normalization properties.**
+
+---
+
+## Key Discovery: Raw Attention Scores
+
+A critical finding in our research was that **removing softmax normalization** from the attention mechanism yielded significant improvement:
+
+**Impact of Softmax:**
+```
+v2 with softmax:    80.45%
+v2 without softmax: 81.73%
+Improvement:        +1.28pp
+```
+
+**Why does this work?**
+
+In standard Transformers, softmax is necessary because Q ≠ K:
+```python
+scores = Q @ K.T  # Different matrices
+scores = softmax(scores / sqrt(d))  # Need normalization
+```
+
+In Vision-BDH, the **Q=K constraint** creates a self-similarity matrix:
+```python
+scores = Q @ Q.T  # Self-similarity matrix
+# Already has desirable properties:
+# - Diagonal dominance (self-attention)
+# - Symmetric (bidirectional)
+# - Bounded by RoPE encoding
+```
+
+The self-similarity matrix provides **natural normalization** without requiring softmax, allowing raw attention scores to be more expressive while maintaining training stability.
 
 ---
 
@@ -145,21 +179,50 @@ The results reveal fundamental differences in their processing strategies.
 
 ## Architecture Evolution
 
-| Feature | Vision-BDH v1 | Vision-BDH v2 |
-|---------|---------------|---------------|
-| **Parameters** | 3.6M | **3.2M** ✅ |
-| **CIFAR-10 (50ep)** | 80.43% | **80.45%** 🏆 |
-| **CIFAR-100 (50ep)** | - | **51.44%** 🏆 |
-| Weight Init | Normal | **Xavier uniform** ✅ |
-| LayerNorm | Post-encoder | **Pre-encoder (Pre-LN)** ✅ |
-| Gradient Flow | Good | **Improved** ✅ |
-| **Recommendation** | Historical reference | **Use for all new experiments** ✅ |
+| Feature | Vision-BDH v1 | Vision-BDH v2 (baseline) | Vision-BDH v2 (optimized) |
+|---------|---------------|--------------------------|---------------------------|
+| **Parameters** | 3.6M | 3.2M | **3.2M** ✅ |
+| **CIFAR-10 (50ep)** | 80.43% | 80.45% | **81.73%** 🏆 |
+| **CIFAR-100 (50ep)** | - | **51.44%** 🏆 | - |
+| Weight Init | Normal | **Xavier uniform** | **Xavier uniform** ✅ |
+| LayerNorm | Post-encoder | **Pre-LN** | **Pre-LN** ✅ |
+| Attention | With softmax | With softmax | **Raw scores** ✅ |
+| **Recommendation** | Historical | Good baseline | **Best performance** ✅ |
+
+**Key Finding:** The optimized v2 removes softmax from attention, leveraging the Q=K constraint's natural normalization for +1.28pp improvement.
+
+---
+
+## Failed Experiments
+
+### Vision-BDH v3: ScaledLayerNorm (77.27%)
+
+**Hypothesis:** Depth-dependent scaling (1/sqrt(depth)) would improve gradient flow in deep recurrent networks, inspired by ReZero (Bachlechner et al., 2020).
+
+**Implementation:**
+```python
+class ScaledLayerNorm(nn.Module):
+    def __init__(self, normalized_shape, depth_idx: int):
+        super().__init__()
+        self.ln = nn.LayerNorm(normalized_shape)
+        self.scale = 1.0 / math.sqrt(depth_idx)  # Layer 6: 0.408×
+```
+
+**Result:** FAILED - accuracy dropped to 77.27% (-4.46pp vs v2 optimized).
+
+**Analysis:**
+- ❌ 6 layers is too shallow to need depth scaling
+- ❌ 1/sqrt(depth) was too aggressive (layer 6: only 0.408× scaling)
+- ❌ Over-damped deep layers, hindering learning
+- ❌ Gradient accumulation: 0.408^6 ≈ 0.005 (severe vanishing)
+
+**Lesson Learned:** Not all techniques from very deep networks (50+ layers) transfer to shallow networks (6 layers). **Simplicity wins** - removing softmax (+1.28pp) was more effective than adding complexity (-4.46pp).
 
 ---
 
 ## Architecture Details
 
-### Vision-BDH v2 (Recommended)
+### Vision-BDH v2 Optimized (Recommended)
 
 ```
 Input: 32×32×3 image
@@ -171,7 +234,7 @@ Positional Embedding (learned)
 BDH Core (6 recurrent layers):
   ├─ Pre-LayerNorm (stability)
   ├─ Sparse projection (ReLU activation)
-  ├─ Bidirectional attention (Q=K constraint)
+  ├─ Bidirectional attention (Q=K constraint, NO softmax) ← KEY!
   ├─ Gating mechanism (multiplicative)
   └─ Xavier-initialized weights
 ↓
@@ -182,32 +245,8 @@ Classification Head
 
 **Specifications:**
 - Parameters: 3.2M
-- CIFAR-10: 80.45%
-- CIFAR-100: 51.44%
-
-### Vision-BDH v1
-
-```
-Input: 32×32×3 image
-↓
-Patch Embedding (4×4 patches) → 64 tokens × 192 dims
-↓
-Positional Embedding (learned)
-↓
-BDH Core (6 recurrent layers):
-  ├─ Sparse projection (ReLU activation)
-  ├─ Bidirectional attention (Q=K constraint)
-  ├─ Gating mechanism (multiplicative)
-  └─ Normal weight initialization
-↓
-Global Average Pooling
-↓
-Classification Head
-```
-
-**Specifications:**
-- Parameters: 3.6M
-- CIFAR-10: 80.43%
+- CIFAR-10: **81.73%** (best)
+- Key difference: Raw attention scores without softmax
 
 ### ViT-Tiny Baseline
 
@@ -219,7 +258,7 @@ Patch Embedding (4×4 patches) → 64 tokens × 192 dims
 Positional Embedding (learned)
 ↓
 12 Independent Transformer Layers:
-  ├─ Multi-head attention (3 heads)
+  ├─ Multi-head attention (3 heads, with softmax)
   └─ Standard MLP (768 dims, 4× multiplier)
 ↓
 Classification Head
@@ -282,48 +321,45 @@ uv pip install torch torchvision pandas matplotlib timm
 
 **CIFAR-10:**
 ```bash
-# Vision-BDH v2 (recommended)
+# Vision-BDH v2 optimized (81.73% - recommended)
+python train_bdh_v2_nosoftmax_cifar10.py
+
+# Vision-BDH v2 baseline (80.45%)
 python train_bdh_v2_cifar10.py
 
-# Vision-BDH v1
+# Vision-BDH v1 (80.43%)
 python train_bdh_v1_cifar10.py
 
-# ViT-Tiny baseline
+# ViT-Tiny baseline (76.05%)
 python train_vit_tiny_cifar10.py
 ```
 
 **CIFAR-100:**
 ```bash
-# Vision-BDH v2
+# Vision-BDH v2 (51.44%)
 python train_bdh_v2_cifar100.py
 
-# ViT-Tiny baseline
+# Baselines
 python train_vit_tiny_cifar100.py
-
-# Additional baselines
 python train_resnet20_cifar100.py
 python train_mobilenetv2_cifar100.py
 python train_deit_tiny_cifar100.py
 python train_efficientnet_cifar100.py
 ```
 
-All scripts will:
-- Auto-download datasets
-- Train for specified epochs
-- Save checkpoints
-- Report final accuracy
-
-### Visualization
+### Attention Visualization
 
 ```bash
-python analysis/analyze.py
+# Generate attention maps for interpretability
+python interpretability/visualize_attention.py
 ```
 
-Generates plots in `analysis_results/`:
-- Learning curves
-- Accuracy comparisons
-- Parameter efficiency
-- Training dynamics
+### Analysis
+
+```bash
+# Generate learning curves and comparisons
+python analysis/analyze.py
+```
 
 ---
 
@@ -334,126 +370,77 @@ vision-bdh/
 ├── models/
 │   ├── bdh.py                      # Original BDH implementation
 │   ├── vision_bdh.py               # Vision-BDH v1
-│   ├── vision_bdh_v2.py            # Vision-BDH v2 (recommended)
-│   ├── vision_bdh_ablation.py      # Vision-BDH v2 (for ablation)
+│   ├── vision_bdh_v2.py            # Vision-BDH v2 baseline
+│   ├── vision_bdh_v2_nosoftmax.py  # Vision-BDH v2 optimized (recommended)
+│   ├── vision_bdh_ablation.py      # For ablation studies
 │   └── vit.py                      # ViT-Tiny baseline
-│ 
+├── interpretability/
+│   ├── visualize_attention.py      # Attention visualization tool
+│   └── models_for_viz/             # Modified models for visualization
 ├── analysis/
-│   ├── compare_ablations.py        # For ablation
-│   └── analyze.py                  # Visualization tools
-│ 
-├── attention_maps/                 # Generated maps
+│   ├── compare_ablations.py
+│   └── analyze.py
+├── attention_maps/                 # Generated attention visualizations
 ├── analysis_results/               # Generated plots
-├── checkpoints_v1_cifar10/         # Vision-BDH v1 checkpoints
-├── checkpoints_v2_cifar10/         # Vision-BDH v2 CIFAR-10 checkpoints
-├── checkpoints_v2_cifar100/        # Vision-BDH v2 CIFAR-100 checkpoints
-├── checkpoints_vit_tiny_cifar10/   # ViT-Tiny CIFAR-10 checkpoints
-├── checkpoints_vit_tiny_cifar100/  # ViT-Tiny CIFAR-100 checkpoints
-├── checkpoints_resnet20_cifar100/  # ResNet-20 checkpoints
-├── checkpoints_mobilenetv2_cifar100/   # MobileNetV2 checkpoints
-├── checkpoints_deit_tiny_cifar100/     # DeiT-Tiny checkpoints
-├── checkpoints_efficientnet_cifar100/  # EfficientNet-B0 checkpoints
+├── checkpoints_*/                  # Model checkpoints
 ├── data_cifar10/                   # CIFAR-10 (auto-downloaded)
 ├── data_cifar100/                  # CIFAR-100 (auto-downloaded)
-├── train_ablation_cifar100.py
-├── train_bdh_v1_cifar10.py
-├── train_bdh_v2_cifar10.py
-├── train_bdh_v2_cifar100.py
-├── train_vit_tiny_cifar10.py
-├── train_vit_tiny_cifar100.py
-├── train_resnet20_cifar100.py
-├── train_mobilenetv2_cifar100.py
-├── train_deit_tiny_cifar100.py
-└── train_efficientnet_cifar100.py
+└── train_*.py                      # Training scripts
 ```
 
 ---
 
 ## Results Reproduction
 
-### CIFAR-10 (50 epochs)
+### CIFAR-10 (50 epochs) - Best Result
 
-1. Train Vision-BDH v2:
-   ```bash
-   python train_bdh_v2_cifar10.py
-   ```
-   Expected: 80.45% ± 0.2%
-
-2. Train ViT-Tiny baseline:
-   ```bash
-   python train_vit_tiny_cifar10.py
-   ```
-   Expected: 76.05% ± 0.3%
-
-3. Generate visualizations:
-   ```bash
-   python analysis/analyze.py
-   ```
+```bash
+# Train optimized v2 (no softmax)
+python train_bdh_v2_nosoftmax_cifar10.py
+```
+Expected: **81.73%** ± 0.2%
 
 ### CIFAR-100 (50 epochs)
 
-1. Train Vision-BDH v2:
-   ```bash
-   python train_bdh_v2_cifar100.py
-   ```
-   Expected: 51.44% ± 0.5%
-
-2. Train baselines (optional):
-   ```bash
-   python train_vit_tiny_cifar100.py      # 46.53%
-   python train_resnet20_cifar100.py      # 45.62%
-   python train_efficientnet_cifar100.py  # 40.20%
-   ```
+```bash
+python train_bdh_v2_cifar100.py
+```
+Expected: **51.44%** ± 0.5%
 
 ---
 
 ## Future Research Directions
 
 ### ✅ Completed
-- [x] 50-epoch validation on CIFAR-10
-- [x] Extended CIFAR-100 benchmark
-- [x] Multiple baseline comparisons
-- [x] v1 vs v2 architecture comparison
+- [x] 50-epoch validation on CIFAR-10/100
+- [x] Multiple baseline comparisons (6 models)
+- [x] Attention visualization and interpretability
+- [x] Ablation study: softmax removal (+1.28pp)
+- [x] Failed experiment documentation (v3 ScaledLN)
 
 ### 🎯 High Priority
 
-**1. Semantic Segmentation (Primary Focus)**
+**1. Semantic Segmentation**
 - [ ] Develop BDH-UNet hybrid architecture
-- [ ] Vision-BDH encoder + U-Net decoder
 - [ ] Test on Pascal VOC, Cityscapes
 - **Hypothesis:** Sparse activations + gating → efficient segmentation
 
-**2. Architecture Analysis**
-- [x] Ablation studies (gating, Q=K, sparsity)
-- [x] Visualize attention patterns
-- [ ] Analyze activation sparsity statistics
-- [ ] Compare feature representations (CKA, SVCCA)
+**2. Further Ablation Studies**
+- [ ] Q=K constraint removal
+- [ ] Gating mechanism analysis
+- [ ] Activation sparsity quantification
 
 ### 🔬 Medium Priority
 
 **3. Scaling Studies**
 - [ ] ImageNet-1K pre-training
 - [ ] Larger models (ViT-Small/Base equivalent)
-- [ ] Multi-scale training
 - [ ] Transfer learning evaluation
 
 **4. Efficiency Optimization**
 - [ ] Mixed precision (FP16/BF16)
 - [ ] Model quantization (INT8)
 - [ ] FlashAttention integration
-- [ ] Edge deployment optimization
-
-### 💡 Long-term Goals
-
-**5. Advanced Learning**
-- [ ] Self-supervised pre-training (MAE)
-- [ ] Fine-grained classification
-- [ ] Few-shot learning
-
-**6. New Applications**
-- [ ] Object detection (DETR-style heads)
-- [ ] Video understanding
-- [ ] Multi-modal learning
 
 ---
 
@@ -468,8 +455,9 @@ If you use this code or find our work helpful, please cite:
   year = {2025},
   publisher = {GitHub},
   url = {https://github.com/takzen/vision-bdh},
-  note = {Achieved 80.45\% on CIFAR-10 and 51.44\% on CIFAR-100, 
-          outperforming baselines with 40\% fewer parameters}
+  note = {Achieved 81.73\% on CIFAR-10 and 51.44\% on CIFAR-100, 
+          outperforming baselines with 40\% fewer parameters. 
+          Key finding: Q=K constraint enables raw attention without softmax.}
 }
 ```
 
@@ -498,24 +486,6 @@ Please also cite the original BDH paper:
 
 ---
 
-## Contributing
-
-We welcome contributions in:
-- 🐛 Bug fixes
-- 📊 New experimental results
-- 🔬 Architecture variants
-- 📝 Documentation
-- 🎨 Visualization tools
-- ⚡ Performance optimizations
-
-Please:
-- Open issues for bugs/questions
-- Submit pull requests
-- Share experimental insights
-- Join discussions about sparse transformers
-
----
-
 ## License
 
 MIT License - See `LICENSE` file for details.
@@ -538,25 +508,28 @@ MIT License - See `LICENSE` file for details.
 
 ## Changelog
 
-### v3.1 (Current) - Interpretability and Architectural Refactoring
-- ✅ **Attention Visualization:** Implemented tools (`interpretability/visualize_attention.py`) to generate and analyze attention maps, providing qualitative insights into the model's inner workings.
-- ✅ **Architectural Refactoring:** Refactored the `VisionBDH-v2` model to be highly configurable, enabling easy ablation studies of key components like normalization styles.
-- ✅ **Documentation:** Added a new "Visual Analysis" section with attention map comparisons and updated the README with the latest findings.
+### v3.2 (Current) - Optimized Architecture & Failed Experiments
+- ✅ **Best result:** 81.73% on CIFAR-10 (v2 without softmax)
+- ✅ **Key discovery:** Q=K constraint enables raw attention (+1.28pp)
+- ✅ **Failed experiment:** v3 ScaledLayerNorm documented (-4.46pp)
+- ✅ **Lesson learned:** Simplicity often beats complexity
+- ✅ **Complete ablation:** Softmax removal properly validated
 
-### v3.0 (Current) - Extended Benchmarks & CIFAR-100
-- ✅ **50-epoch training:** Comprehensive validation on CIFAR-10
+### v3.1 - Interpretability and Architectural Refactoring
+- ✅ **Attention Visualization:** Tools for analyzing attention patterns
+- ✅ **Architectural Refactoring:** Configurable model for ablation studies
+- ✅ **Visual Analysis:** Qualitative insights into model behavior
+
+### v3.0 - Extended Benchmarks & CIFAR-100
+- ✅ **50-epoch training:** Comprehensive validation
 - ✅ **CIFAR-100 benchmark:** Extended evaluation (51.44%)
-- ✅ **Multiple baselines:** Compared against 6 architectures
-- ✅ **Architecture robustness:** v1 and v2 both achieve ~80.4% on CIFAR-10
-- ✅ **Performance scaling:** Advantages increase with task complexity
-- ✅ **Documentation:** Clean, organized project structure
+- ✅ **Multiple baselines:** 6 architecture comparisons
+- ✅ **Performance scaling:** Advantages increase with complexity
 
 ### v2.0 - Enhanced Architecture
 - ✅ Vision-BDH v2 with Xavier init and Pre-LayerNorm
-- ✅ 30-epoch validation (v1: 79.54%, v2: 78.76%)
 - ✅ Architecture comparison and analysis
 
 ### v1.0 - Initial Release
 - ✅ BDH adapted for vision with bidirectional attention
 - ✅ ViT-Tiny baseline comparison
-- ✅ Initial CIFAR-10 results

@@ -81,7 +81,10 @@ We conducted controlled experiments on CIFAR-10 and CIFAR-100, training all mode
 
 ### Overall Conclusion
 
-**Vision-BDH demonstrates superior accuracy and parameter efficiency compared to standard CNN and Transformer baselines when trained from scratch. Key discovery: removing softmax from attention (+1.28pp) leverages the Q=K constraint's natural normalization properties.**
+**Vision-BDH demonstrates superior accuracy and parameter efficiency 
+compared to standard baselines. Key discoveries: Pre-LayerNorm enables 
++1.30pp improvement, and works synergistically with raw attention scores. 
+Adding softmax to Pre-LN architecture negates most benefits.**
 
 ---
 
@@ -177,6 +180,143 @@ The results reveal fundamental differences in their processing strategies.
 
 ---
 
+## Architecture Ablation Study
+
+We systematically evaluated the impact of normalization strategy and attention design:
+
+### Complete Results
+
+| Variant | Normalization | Softmax? | Test Accuracy | Delta vs v1 |
+|---------|---------------|----------|---------------|-------------|
+| v1 (original) | Mixed LN | ❌ No | 80.43% | baseline |
+| v2 baseline | Pre-LN | ✅ Yes | 80.45% | +0.02pp |
+| **v2 optimized** | **Pre-LN** | ❌ **No** | **81.73%** 🏆 | **+1.30pp** |
+| v3 (failed) | Pre-LN + ScaledLN | ❌ No | 77.27% | -3.16pp |
+
+### Key Findings
+
+#### 1. Pre-LayerNorm Enables the Improvement (+1.30pp)
+
+**Comparison:**
+```
+v1 (Mixed LN, no softmax):  80.43%
+v2 (Pre-LN, no softmax):    81.73%
+Improvement:                +1.30pp
+```
+
+Pre-LayerNorm (normalizing before sub-layers rather than after) significantly improves performance. This is now the standard in modern Transformers (GPT-2+, T5, etc.) due to better gradient flow and training stability.
+
+#### 2. Softmax Conflicts with Pre-LayerNorm Architecture
+
+**Synergy Test:**
+```
+Pre-LN + no softmax:  81.73% ✅ (best)
+Pre-LN + softmax:     80.45% ❌ (loses +1.28pp!)
+```
+
+Adding softmax to the Pre-LN architecture **negates most of the Pre-LN benefit**, resulting in only +0.02pp improvement over v1.
+
+**Hypothesis:** Pre-LayerNorm stabilizes training, allowing raw attention scores (leveraging Q=K constraint) to be more expressive. Softmax normalization in this context may be overly restrictive, limiting the model's ability to learn nuanced attention patterns.
+
+#### 3. Synergistic Architecture Design
+
+The combination of Pre-LN and raw attention (no softmax) works synergistically:
+- **Pre-LN alone:** Would need softmax for stability (standard Transformer)
+- **No softmax alone (v1):** Limited by mixed normalization (80.43%)
+- **Pre-LN + no softmax:** Achieves best results (81.73%) ✅
+
+This suggests that architectural components should be co-designed rather than mixed arbitrarily. The Q=K constraint's natural normalization properties only shine when combined with proper normalization placement (Pre-LN).
+
+---
+
+## Architecture Evolution
+
+| Feature | v1 (original) | v2 (baseline) | v2 (optimized) |
+|---------|---------------|---------------|----------------|
+| **Parameters** | 3.6M | 3.2M | **3.2M** ✅ |
+| **CIFAR-10 (50ep)** | 80.43% | 80.45% | **81.73%** 🏆 |
+| **CIFAR-100 (50ep)** | - | **51.44%** 🏆 | - |
+| Weight Init | Normal | **Xavier** | **Xavier** ✅ |
+| LayerNorm | Mixed (Post-LN style) | **Pre-LN** | **Pre-LN** ✅ |
+| Attention | **Raw scores** | With softmax | **Raw scores** ✅ |
+| **Key Innovation** | Q=K constraint | Pre-LN | **Pre-LN + raw attention** 🎯 |
+| **Recommendation** | Historical | Baseline | **Use this!** ✅ |
+
+### Evolution Summary
+
+**v1 → v2 baseline (+0.02pp):**
+- Added Pre-LayerNorm ✅
+- Added softmax ❌
+- Net effect: Minimal improvement (softmax cancels Pre-LN benefit)
+
+**v1 → v2 optimized (+1.30pp):**
+- Added Pre-LayerNorm ✅
+- Kept raw attention ✅
+- Net effect: Significant improvement (synergy!)
+
+**v2 baseline → v2 optimized (+1.28pp):**
+- Removed softmax ✅
+- Unlocked Pre-LN's full potential
+
+---
+
+## Key Discovery: Pre-LN + Raw Attention Synergy
+
+### The Synergistic Effect
+
+Our research revealed that **Pre-LayerNorm and raw attention scores work synergistically**, not independently:
+
+```python
+# v1: Mixed normalization + raw attention
+for level in range(n_layer):
+    x_latent = x @ encoder  # No pre-normalization
+    # ... attention ...
+    x = ln(x + y)  # Post-normalization
+Result: 80.43%
+
+# v2 baseline: Pre-LN + softmax
+for level in range(n_layer):
+    x = ln(x)  # Pre-normalization ✅
+    x_latent = x @ encoder
+    # ... attention with softmax ❌ ...
+    x = x + y
+Result: 80.45% (softmax limits Pre-LN benefit)
+
+# v2 optimized: Pre-LN + raw attention
+for level in range(n_layer):
+    x = ln(x)  # Pre-normalization ✅
+    x_latent = x @ encoder
+    # ... raw attention (no softmax) ✅ ...
+    x = x + y
+Result: 81.73% (full synergy!)
+```
+
+### Why Does This Work?
+
+**Pre-LayerNorm provides:**
+- ✅ Stable gradient flow
+- ✅ Normalized inputs to attention
+- ✅ Better training dynamics
+
+**Raw attention (Q=K constraint) provides:**
+- ✅ Self-similarity matrix with natural properties
+- ✅ Diagonal dominance (self-attention)
+- ✅ Bounded by RoPE encoding
+
+**When combined:**
+- Pre-LN stabilizes training → raw scores can be more expressive
+- Q=K constraint → natural normalization → softmax becomes redundant
+- Result: Best of both worlds! 🎯
+
+### Comparison with Standard Transformers
+
+| Architecture | Pre-LN? | Softmax? | Why? |
+|--------------|---------|----------|------|
+| Standard Transformer | ✅ Yes | ✅ Yes | Q ≠ K requires softmax normalization |
+| Vision-BDH (optimized) | ✅ Yes | ❌ No | Q = K provides natural normalization |
+
+**Key insight:** The Q=K constraint fundamentally changes attention mechanics, making softmax unnecessary when combined with Pre-LN.
+
 ## Architecture Evolution
 
 | Feature | Vision-BDH v1 | Vision-BDH v2 (baseline) | Vision-BDH v2 (optimized) |
@@ -186,7 +326,7 @@ The results reveal fundamental differences in their processing strategies.
 | **CIFAR-100 (50ep)** | - | **51.44%** 🏆 | - |
 | Weight Init | Normal | **Xavier uniform** | **Xavier uniform** ✅ |
 | LayerNorm | Post-encoder | **Pre-LN** | **Pre-LN** ✅ |
-| Attention | With softmax | With softmax | **Raw scores** ✅ |
+| Attention | **Raw scores** | With softmax | **Raw scores** ✅ |
 | **Recommendation** | Historical | Good baseline | **Best performance** ✅ |
 
 **Key Finding:** The optimized v2 removes softmax from attention, leveraging the Q=K constraint's natural normalization for +1.28pp improvement.

@@ -1,0 +1,5 @@
+Model,Best Val mIoU [%],Best Epoch,Final Val mIoU [%],Final Train mIoU [%],Convergence (90%)
+BDH-UNET,53.17,72,52.61,54.15,54 ep
+BDH-UNET-FINETUNE,53.33,8,53.03,59.36,2 ep
+RESNET34-UNET,70.73,36,67.96,76.72,24 ep
+RESNET50-UNET,70.69,38,67.75,77.61,32 ep

@@ -39,6 +39,8 @@ data_cifar10/
 data_cifar100/
 dev/
 images/
+data_camvid/
+data_voc/
 
 checkpoints_v2_cifar100/
 checkpoints_resnet20_cifar100/
@@ -55,6 +57,11 @@ checkpoints_v2_nosoftmax_cifar10/
 checkpoints_v3_cifar10/
 
 checkpoints_ablation_nogating_cifar100/
+
+checkpoints_camvid_bdh_rope_fixed/
+checkpoints_camvid_resnet34_unet/
+checkpoints_camvid_resnet50_unet/
+checkpoints_finetune_bdh/
 
 
 

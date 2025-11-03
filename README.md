@@ -415,13 +415,10 @@ uv pip install torch torchvision pandas matplotlib timm
 **CIFAR-10:**
 ```bash
 # Vision-BDH v2 optimized (81.73% - recommended)
-python train_bdh_v2_nosoftmax_cifar10.py
-
-# Vision-BDH v2 baseline (80.45%)
-python train_bdh_v2_cifar10.py
+python train_v2_cifar10.py 
 
 # Vision-BDH v1 (80.43%)
-python train_bdh_v1_cifar10.py
+python train_v1_cifar10.py
 
 # ViT-Tiny baseline (76.05%)
 python train_vit_tiny_cifar10.py
@@ -430,7 +427,7 @@ python train_vit_tiny_cifar10.py
 **CIFAR-100:**
 ```bash
 # Vision-BDH v2 (51.44%)
-python train_bdh_v2_cifar100.py
+python train_v2_cifar100.py
 
 # Baselines
 python train_vit_tiny_cifar100.py
@@ -836,17 +833,14 @@ CONFIG = {
 # Extract to: ./data_camvid/
 
 # 2. Train BDH-UNet (80 epochs)
-python train_bdh_unet_camvid.py
+python train_bdh_unet.py
 
 # Expected checkpoints:
 # - checkpoints_camvid_bdh/best_0.532.pth (epoch 72)
 # - Intermediate saves every 5 epochs
 
-# 3. Evaluate on test set
-python evaluate_camvid.py --checkpoint checkpoints_camvid_bdh/best_0.532.pth
-
-# 4. Generate visualizations
-python visualize_segmentation.py --model bdh-unet --split val
+# 3. Generate visualizations
+python analyze_segmentation_results.py 
 ```
 
 **Expected Results:**

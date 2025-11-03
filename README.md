@@ -538,8 +538,6 @@ Expected: **51.44%** ± 0.5%
 
 ---
 
----
-
 ## Semantic Segmentation Experiments
 
 ### Motivation

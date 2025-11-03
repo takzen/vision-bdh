@@ -5,6 +5,7 @@
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![CIFAR-10](https://img.shields.io/badge/CIFAR--10-81.73%25-success.svg)
 ![CIFAR-100](https://img.shields.io/badge/CIFAR--100-51.44%25-success.svg)
+![CamVid](https://img.shields.io/badge/CamVid-53.17%25-orange.svg)
 
 This project is a PyTorch-based research framework dedicated to adapting and exploring the novel **Baby Dragon Hatchling (BDH)** architecture for computer vision tasks.
 
@@ -463,15 +464,18 @@ vision-bdh/
 │   ├── bdh.py                      # Original BDH implementation
 │   ├── vision_bdh.py               # Vision-BDH v1
 │   ├── vision_bdh_v2.py            # Vision-BDH v2 baseline
-│   ├── vision_bdh_v2_nosoftmax.py  # Vision-BDH v2 optimized (recommended)
+│   ├── vision_bdh_v3.py            # Vision-BDH v3 
 │   ├── vision_bdh_ablation.py      # For ablation studies
+│   ├── bdh_unet.py                 # Vision-BDH-Unet
 │   └── vit.py                      # ViT-Tiny baseline
 ├── interpretability/
 │   ├── visualize_attention.py      # Attention visualization tool
 │   └── models_for_viz/             # Modified models for visualization
 ├── analysis/
-│   ├── compare_ablations.py
+│   ├── analyze_segmentation_results.py
+│   ├── compare_existing_results.py
 │   └── analyze.py
+├── analysis_results_camvid/
 ├── attention_maps/                 # Generated attention visualizations
 ├── analysis_results/               # Generated plots
 ├── checkpoints_*/                  # Model checkpoints
@@ -622,7 +626,7 @@ U-Net Decoder (ConvTranspose2d + BatchNorm)
 *Per-model train/val mIoU progression with overfitting analysis. Left to right: (1) BDH-UNet: Tight 2.16pp train-val gap indicates excellent generalization, (2) BDH-Finetune: Larger 6.33pp gap from only 10 epochs, (3) ResNet34: 8.76pp gap typical for pretrained models, (4) ResNet50: 9.86pp gap - largest overfitting despite (or because of) most parameters. The shaded regions highlight train-val divergence.*
 ### Key Findings
 
-✅ **Competitive Performance:** BDH-UNet (53.17%) matches ResNet34 from scratch (~52-58% estimated)
+✅ **Competitive results:** 53.17% mIoU (matches ResNet from scratch)
 
 ✅ **2-3× Parameter Efficiency:** Achieves similar mIoU with 60-70% fewer parameters
 
@@ -923,14 +927,14 @@ MIT License - See `LICENSE` file for details.
 
 ### v4.0 (Current) - Semantic Segmentation Validation
 - ✅ **Dense prediction task:** BDH-UNet on CamVid segmentation
-- ✅ **Competitive results:** 53.17% mIoU (matches ResNet from scratch)
+- ✅ **Competitive results:** 53.17% mIoU (matches BDH-UNet from scratch)
 - ✅ **Parameter efficiency:** 2-3× fewer params than ResNet34 (8-10M vs 24.4M)
 - ✅ **Fair comparison:** Literature-consistent pretrain gap analysis
 - ✅ **Key finding:** BDH architecture successfully adapts to pixel-level tasks
 - ✅ **4 visualization plots:** Learning curves, convergence, loss dynamics
 - ✅ **Future work identified:** Self-supervised pretraining (+12-15pp expected)
 
-### v3.2 (Current) - Architecture Synergy Discovery
+### v3.2 - Architecture Synergy Discovery
 - ✅ **Best result:** 81.73% on CIFAR-10 (Pre-LN + raw attention)
 - ✅ **Key discovery:** Pre-LN and raw attention work synergistically (+1.30pp)
 - ✅ **Ablation study:** Softmax conflicts with Pre-LN architecture

@@ -1,7 +1,6 @@
 import torch
 from torch import nn
 from torch.optim import AdamW
-# Importujemy bibliotekę timm
 import timm
 from torchvision.datasets import CIFAR100
 from torchvision import transforms

@@ -41,6 +41,7 @@ dev/
 images/
 data_camvid/
 data_voc/
+tools/
 
 checkpoints_v2_cifar100/
 checkpoints_resnet20_cifar100/

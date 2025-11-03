@@ -238,7 +238,7 @@ class CamVidDataset(Dataset):
         return image, mask_remap.long()
 
 # ======================
-# Augmentacje
+# Augmentations
 # ======================
 def get_training_augmentation(img_size=CONFIG['img_size']): 
     return A.Compose([
@@ -257,7 +257,7 @@ def get_validation_augmentation(img_size=CONFIG['img_size']):
     ])
 
 # ======================
-# Loss & metric
+# Loss & metrics
 # ======================
 def calculate_iou(pred, target, num_classes=11, ignore_index=11):
     pred = pred.cpu().numpy()
@@ -329,7 +329,7 @@ def main():
     bdh_config = BDHConfig()
     model = BDH_UNet(bdh_config, num_classes=CONFIG['num_classes']+1, img_size=CONFIG['img_size'], patch_size=CONFIG['patch_size']).to(CONFIG['device'])
 
-    # ----- Wczytanie najlepszego modelu z wcześniejszego treningu -----
+    # ----- Loading the best model from previous training -----
     if os.path.exists(CONFIG['pretrained_model']):
         print(f"🔄 Loading pretrained model from {CONFIG['pretrained_model']}")
         checkpoint = torch.load(CONFIG['pretrained_model'], map_location=CONFIG['device'], weights_only=False)

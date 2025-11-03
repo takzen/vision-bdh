@@ -17,7 +17,7 @@ import segmentation_models_pytorch as smp
 
 
 # ======================
-# Konfiguracja (Zmieniony Encoder na ResNet50)
+# Configuration 
 # ======================
 CONFIG = {
     "data_dir": "./data_camvid",
@@ -25,17 +25,17 @@ CONFIG = {
     "batch_size": 8,
     "epochs": 40,
     "lr": 1e-4,
-    "encoder": "resnet50", # ZMIENIONO: z resnet34 na resnet50
+    "encoder": "resnet50", 
     "num_classes": 11,
     "ignore_index": 11,
-    "checkpoint_dir": "./checkpoints_camvid_resnet50_unet", # ZMIENIONO NAZWĘ FOLDERU
+    "checkpoint_dir": "./checkpoints_camvid_resnet50_unet", 
     "device": "cuda" if torch.cuda.is_available() else "cpu",
     "cache_mapping": True
 }
 
 
 # ======================
-# Dataset CamVid (Z OPTYMALIZACJĄ LUT)
+# Dataset CamVid 
 # ======================
 class CamVidDataset(Dataset):
     NUM_CLASSES = CONFIG['num_classes']
@@ -51,7 +51,7 @@ class CamVidDataset(Dataset):
         labels_folder2 = self.root / f"{split}annot"
         self.masks_dir = labels_folder1 if labels_folder1.exists() else labels_folder2
         if not self.masks_dir.exists():
-            raise FileNotFoundError(f"Nie znaleziono folderu masek dla split={split}")
+            raise FileNotFoundError(f"No mask folder found for split={split}")
 
         self.images = sorted(self.images_dir.glob('*.png'))
         if len(self.images) == 0:
@@ -60,10 +60,10 @@ class CamVidDataset(Dataset):
         # Mapping klas
         if class_mapping is not None:
             self.mapping = class_mapping
-            print(f"ℹ️ Split '{split}': używam przekazanego mappingu ({len(self.mapping)} klas)")
+            print(f"ℹ️ Split '{split}': I use the mapping provided({len(self.mapping)} class)")
         else:
             self.mapping = self._create_class_mapping()
-            print(f"ℹ️ Split '{split}': stworzono mapping dla {len(self.mapping)} unikalnych wartości pikseli")
+            print(f"ℹ️ Split '{split}': mapping was created for {len(self.mapping)} unique pixel values")
             
         # UWAGA: OPTYMALIZACJA - Tworzenie Look-Up Table (LUT)
         max_val = max(self.mapping.keys()) if self.mapping else 0
@@ -71,19 +71,19 @@ class CamVidDataset(Dataset):
         for old_val, new_val in self.mapping.items():
             if old_val <= max_val:
                 self.lut[old_val] = new_val
-        print(f"✅ Stworzono LUT (rozmiar {len(self.lut)}) dla szybszego mapowania masek.")
+        print(f"✅ Created LUT (size{len(self.lut)}) for faster mask mapping.")
 
 
     def _create_class_mapping(self):
         cache_file = self.root / f"class_mapping_{self.split}.json"
         if CONFIG['cache_mapping'] and cache_file.exists():
-            print(f"📂 Ładowanie mappingu z cache: {cache_file}")
+            print(f"📂 Loading mapping from cache: {cache_file}")
             with open(cache_file, 'r') as f:
                 mapping = json.load(f)
             return {int(k): v for k, v in mapping.items()}
 
         unique_values = set()
-        print(f"🔍 Skanowanie masek dla '{self.split}'...")
+        print(f"🔍 Scanning masks for '{self.split}'...")
         for img_path in tqdm(self.images, desc="Scanning masks"):
             mask_path = self.masks_dir / (f"{img_path.stem}_L.png" if (self.masks_dir / f"{img_path.stem}_L.png").exists() else img_path.name)
             if not mask_path.exists():
@@ -97,7 +97,7 @@ class CamVidDataset(Dataset):
         mapping = {int(v): min(i, self.IGNORE_INDEX) for i, v in enumerate(sorted_vals)}
 
         if CONFIG['cache_mapping']:
-            print(f"💾 Zapis mappingu do cache: {cache_file}")
+            print(f"💾 Cache mapping entry: {cache_file}")
             with open(cache_file, 'w') as f:
                 json.dump(mapping, f, indent=2)
         return mapping
@@ -113,7 +113,6 @@ class CamVidDataset(Dataset):
         if mask.ndim == 3:
             mask = mask[:, :, 0]
 
-        # OPTYMALIZACJA - Użycie LUT zamiast pętli
         mask_remap = self.lut[mask] 
 
         if self.transform:
@@ -127,7 +126,7 @@ class CamVidDataset(Dataset):
 
 
 # ======================
-# Augmentacje
+# Augmentations
 # ======================
 def get_training_augmentation(img_size=384):
     return A.Compose([
@@ -148,7 +147,7 @@ def get_validation_augmentation(img_size=384):
 
 
 # ======================
-# Metryki
+# Metrics
 # ======================
 def calculate_iou(pred, target, num_classes=11, ignore_index=11):
     pred = pred.cpu().numpy()
@@ -165,7 +164,7 @@ def calculate_iou(pred, target, num_classes=11, ignore_index=11):
     return np.mean(ious) if ious else 0.0
 
 # ======================
-# Funkcja Straty (Dice + Cross-Entropy)
+# FLoss (Dice + Cross-Entropy)
 # ======================
 def get_combined_loss(ignore_index):
     ce_loss = nn.CrossEntropyLoss(ignore_index=ignore_index)
@@ -178,7 +177,7 @@ def get_combined_loss(ignore_index):
 
 
 # ======================
-# Pętle trening/val
+# trening/val
 # ======================
 def train_epoch(model, loader, criterion, optimizer, device, epoch):
     model.train()
@@ -243,7 +242,7 @@ def main():
 
     os.makedirs(CONFIG['checkpoint_dir'], exist_ok=True)
 
-    # Użycie ResNet50 z wagami ImageNet
+    # Using ResNet50 with ImageNet weights
     model = smp.Unet(
         encoder_name=CONFIG['encoder'],
         encoder_weights='imagenet',
@@ -265,7 +264,6 @@ def main():
     val_loader = DataLoader(val_dataset, batch_size=CONFIG['batch_size'], shuffle=False,
                             num_workers=num_workers, pin_memory=True, persistent_workers=True)
     
-    # Użycie połączonej straty
     criterion = get_combined_loss(CONFIG['ignore_index'])
     
     optimizer = torch.optim.Adam(model.parameters(), lr=CONFIG['lr'])

@@ -1,29 +1,29 @@
 ================================================================================
-CAMVID SEGMENTATION: PODSUMOWANIE ANALIZY
+CAMVID SEGMENTATION: ANALYSIS SUMMARY
 ================================================================================
 
 🧠 Model: BDH-UNET
-   Najlepszy mIoU: 53.17% (Epoka 72)
-   Ostateczny mIoU: 52.61%
+   Best mIoU: 53.17% (Epoch 72)
+   Final mIoU: 52.61%
    Train mIoU: 54.15%
 ------------------------------------------------------------
 
 🧠 Model: BDH-UNET-FINETUNE
-   Najlepszy mIoU: 53.33% (Epoka 8)
-   Ostateczny mIoU: 53.03%
+   Best mIoU: 53.33% (Epoch 8)
+   Final mIoU: 53.03%
    Train mIoU: 59.36%
 ------------------------------------------------------------
 
 🧠 Model: RESNET34-UNET
-   Najlepszy mIoU: 70.73% (Epoka 36)
-   Ostateczny mIoU: 67.96%
+   Best mIoU: 70.73% (Epoch 36)
+   Final mIoU: 67.96%
    Train mIoU: 76.72%
 ------------------------------------------------------------
 
 🧠 Model: RESNET50-UNET
-   Najlepszy mIoU: 70.69% (Epoka 38)
-   Ostateczny mIoU: 67.75%
+   Best mIoU: 70.69% (Epoch 38)
+   Final mIoU: 67.75%
    Train mIoU: 77.61%
 ------------------------------------------------------------
 
-🏆 Najlepszy model: RESNET34-UNET (70.73%)
+🏆 Best model: RESNET34-UNET (70.73%)

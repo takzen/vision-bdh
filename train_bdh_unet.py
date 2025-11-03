@@ -18,23 +18,22 @@ import segmentation_models_pytorch as smp
 
 
 # ======================
-# BDH Config - ZOPTYMALIZOWANY
+# BDH Config 
 # ======================
 class BDHConfig:
-    n_embd = 256          # Zmniejszone z 384 (dla GPU memory)
-    n_head = 4            # Zmniejszone z 6
+    n_embd = 256          
+    n_head = 4            
     n_layer = 6           
     dropout = 0.1
-    mlp_internal_dim_multiplier = 16  # Zmniejszone z 32
+    mlp_internal_dim_multiplier = 16  
 
 def get_freqs(N, theta=2**16, dtype=torch.float32):
-    """Generuje fazy dla Rotary Position Embedding."""
     dim = N // 2
     inv_freq = theta ** (torch.arange(0, dim, dtype=dtype) / dim)
     return inv_freq
 
 class BidirectionalAttentionV2(nn.Module):
-    """Bidirectional Attention z RoPE - ZACHOWANE!"""
+    """Bidirectional Attention with RoPE"""
     def __init__(self, config, use_softmax=True):
         super().__init__()
         self.config = config
@@ -82,7 +81,6 @@ class BidirectionalAttentionV2(nn.Module):
         return scores @ V
 
 class VisionBDHv2(nn.Module):
-    """Vision-BDH v2 - ORYGINALNY z Twoimi poprawkami"""
     def __init__(self, bdh_config, img_size=256, patch_size=8, num_classes=10, in_channels=3, use_softmax_attn=False):
         super().__init__()
         self.config = bdh_config
@@ -166,7 +164,7 @@ class VisionBDHv2(nn.Module):
         return logits
 
 # ======================
-# BDH-UNet - NAPRAWIONY DECODER
+# BDH-UNet 
 # ======================
 class BDH_UNet(nn.Module):
     def __init__(self, bdh_config, num_classes=12, img_size=384, patch_size=8):
@@ -184,10 +182,6 @@ class BDH_UNet(nn.Module):
         )
         
         D = bdh_config.n_embd
-        
-        # NAPRAWIONY DECODER - głębszy, lepszy upsampling
-        # patch_size=8 → side=48 dla img_size=384
-        # Potrzebujemy 8x upsampling: 48 → 96 → 192 → 384
         
         self.decoder = nn.Sequential(
             # 48x48 → 96x96
@@ -239,25 +233,25 @@ class BDH_UNet(nn.Module):
         return out
 
 # ======================
-# Config - POPRAWIONE WARTOŚCI KRYTYCZNE
+# Config 
 # ======================
 CONFIG = {
     "data_dir": "./data_camvid",
-    "img_size": 256,        # ✅ Zwiększone z 256
-    "batch_size": 8,        # ✅ KRYTYCZNE: Zwiększone z 2
+    "img_size": 256,        
+    "batch_size": 8,        
     "epochs": 80,
-    # "lr": 3e-4,            # ✅ Zwiększony LR
+    # "lr": 3e-4,            
     "lr": 5e-4,
     "num_classes": 11,
     "ignore_index": 11,
     "checkpoint_dir": "./checkpoints_camvid_bdh_rope_fixed",
     "device": "cuda" if torch.cuda.is_available() else "cpu",
     "cache_mapping": True,
-    "patch_size": 8        # ✅ Sweet spot: nie za duży, nie za mały
+    "patch_size": 8       
 }
 
 # ======================
-# Dataset CamVid (BEZ ZMIAN)
+# Dataset CamVid 
 # ======================
 class CamVidDataset(Dataset):
     NUM_CLASSES = CONFIG['num_classes']
@@ -273,7 +267,7 @@ class CamVidDataset(Dataset):
         labels_folder2 = self.root / f"{split}annot"
         self.masks_dir = labels_folder1 if labels_folder1.exists() else labels_folder2
         if not self.masks_dir.exists():
-            raise FileNotFoundError(f"Nie znaleziono folderu masek dla split={split}")
+            raise FileNotFoundError(f"No mask folder found for split={split}")
 
         self.images = sorted(self.images_dir.glob('*.png'))
         if len(self.images) == 0:
@@ -340,7 +334,7 @@ class CamVidDataset(Dataset):
         return image, mask_remap.long()
 
 # ======================
-# Augmentacje
+# Augmentations
 # ======================
 def get_training_augmentation(img_size=CONFIG['img_size']): 
     return A.Compose([
@@ -360,7 +354,7 @@ def get_validation_augmentation(img_size=CONFIG['img_size']):
     ])
 
 # ======================
-# Metryki & Loss
+# Metrics & Loss
 # ======================
 def calculate_iou(pred, target, num_classes=11, ignore_index=11):
     pred = pred.cpu().numpy()

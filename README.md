@@ -492,14 +492,14 @@ vision-bdh/
 
 ```bash
 # Train optimized v2 (Pre-LN + raw attention)
-python train_bdh_v2_nosoftmax_cifar10.py
+python train_v2_cifar10.py
 ```
 Expected: **81.73%** ± 0.2%
 
 ### CIFAR-100 (50 epochs)
 
 ```bash
-python train_bdh_v2_cifar100.py
+python train_v2_cifar100.py
 ```
 Expected: **51.44%** ± 0.5%
 
